@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <link rel="shortcut icon" href="../assets/icon/favicon2.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaTech | Tempo Real</title>
+
+    <link rel="stylesheet" href="./../css/estilo.css" />
+
+    <script src="../js/sessao.js"></script>
+    <script src="../js/alerta.js"></script>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="janela">
+
+        <div class="header-left dash-header">
+
+            <h1 style="color: #deedc8;">CTA Helper</h1>
+
+            <div class="hello">
+                <h3 style="color: #deedc8;">Olá, <span  id="b_usuario">usuário</span>!</h3>
+            </div>
+
+            <div class="btn-nav">
+                <a href="./cards.html">
+                    <h3>Pokedex</h3>
+                </a>
+            </div>
+
+            <div class="btn-nav-white">
+                <a href="./dashboard.html">
+                    <h3>Gráficos</h3>
+                </a>
+            </div>
+
+            <div class="btn-logout" onclick="limparSessao()">
+                <h3>Sair</h3>
+            </div>
+
+        </div>
+        <div class="dash-content"> 
+            <div id="pokedex_bar" class="pokedex-bar">
+                <span class="pokedex-bar-span">Filtros: </span>
+                <button onclick="pokedex_all()" class="pokedex-bar-button-actual">All</button>
+                <button onclick="pokedex_not_registred()" class="pokedex-bar-button">Nao registrados</button>
+                <button onclick="pokedex_registred()" class="pokedex-bar-button ">Registrados</button>
+            </div>
+            <div id="div_pokedex" class="div-pokedex-dashboard">
+
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    document.getElementById('b_usuario').innerHTML = sessionStorage.NICK_USUARIO;
+
+let parar_pokedex_all = false;
+let parar_pokedex_not_registred = false;
+let parar_pokedex_registred = false;
+
+async function pokedex_all() {
+        parar_pokedex_not_registred = true;
+        parar_pokedex_registred = true;
+        var usuarioVar = sessionStorage.ID_USUARIO;
+
+        document.getElementById("pokedex_bar").innerHTML = `
+            <span class="pokedex-bar-span">Filtros: </span>
+            <button onclick="pokedex_all()" class="pokedex-bar-button-actual">All</button>
+            <button onclick="pokedex_not_registred()" class="pokedex-bar-button">Nao registrados</button>
+            <button onclick="pokedex_registred()" class="pokedex-bar-button ">Registrados</button>
+        `;
+
+        fetch("/pokedex/buscarPokemonPorUsuario", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                usuarioServer: usuarioVar,
+            })
+        }).then(function (resposta) {
+            console.log("ESTOU NO THEN DO entrar()!")
+
+            if (resposta.ok) {
+                console.log(resposta);
+
+                resposta.json().then(async json => {
+                    console.log(json);
+                    console.log(JSON.stringify(json));
+                    document.getElementById("div_pokedex").innerHTML = '';
+                    let pokemon_do_usuario = json.pokemon;
+                    parar_pokedex_not_registred = false;
+                    parar_pokedex_registred = false;
+
+                    for(let p = 1;p<1026;p++) {
+                        if (parar_pokedex_all) {
+                            console.log('o stop esta ou foi ativado');
+                            return;
+                        }  
+                        let usuario_ja_tem = false;
+                        for(let u = 0; u< pokemon_do_usuario.length; u++) {
+                            if (p == pokemon_do_usuario[u].fk_pokemon) {
+                                usuario_ja_tem = true;
+                                break
+                            } else {
+                                usuario_ja_tem = false;
+                            }
+                        }
+                        
+                        console.log('tudo normal, indo pro proximo card...')
+                        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${p}`);
+                        const data = await response.json();
+                        console.log(data);
+                        console.log('quantidade de tipos do pokemon: ', data.types.length)
+                        document.getElementById("div_pokedex").innerHTML += `
+                            <div class="pokedex-card">
+                                <span class="pokemon-number">#${p}</span>
+                                <span class="pokemon-name"><b>${data.forms[0].name}</b></span>
+                                <img src="${data.sprites.front_default}" class="pokemon-img" alt="">
+                                ${data.types.length == 1 ? `<img src="../assets/imgs/${data.types[0].type.name}.png" class="pokemon-type" alt="">` : `<img src="../assets/imgs/${data.types[0].type.name}.png" class="pokemon-type" alt=""><img src="../assets/imgs/${data.types[1].type.name}.png" class="pokemon-type" alt="">`}
+                                ${usuario_ja_tem ? '<button class="pokemon-registered-button"><b>REGISTRADO</b></button>' : `<button class="pokemon-register-button" onclick="adicionar_pokemon(${p})"><b>REGISTRAR</b></button>`}
+                            </div>
+                        `
+                    }
+                });
+
+            } else {
+
+                console.log("Houve um erro ao tentar realizar o login!");
+
+                resposta.text().then(texto => {
+                    console.error(texto);
+                    // finalizarAguardar(texto);
+                });
+            }})
+}
+pokedex_all()
+async function pokedex_not_registred() {
+    var usuarioVar = sessionStorage.ID_USUARIO;
+    parar_pokedex_all = true;
+    parar_pokedex_registred = true;
+    document.getElementById("pokedex_bar").innerHTML = `
+            <span class="pokedex-bar-span">Filtros: </span>
+            <button onclick="pokedex_all()" class="pokedex-bar-button">All</button>
+            <button onclick="pokedex_not_registred()" class="pokedex-bar-button-actual">Nao registrados</button>
+            <button onclick="pokedex_registred()" class="pokedex-bar-button ">Registrados</button>
+    `;
+    
+    
+    fetch("/pokedex/buscarPokemonPorUsuario", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                usuarioServer: usuarioVar,
+            })
+        }).then(function (resposta) {
+            console.log("ESTOU NO THEN DO entrar()!")
+
+            if (resposta.ok) {
+                console.log(resposta);
+
+                resposta.json().then(async json => {
+                    console.log(json);
+                    console.log(JSON.stringify(json));
+                    document.getElementById("div_pokedex").innerHTML = '';
+                    let pokemon_do_usuario = json.pokemon;
+                    parar_pokedex_all = false;
+                    parar_pokedex_registred = false;
+
+                    for(let p = 1;p<1026;p++) {
+                    if (parar_pokedex_not_registred) {
+                        console.log('o stop esta ou foi ativado');
+                        return;
+                    }  
+                    let usuario_ja_tem = false;
+                        for(let u = 0; u< pokemon_do_usuario.length; u++) {
+                            if (p == pokemon_do_usuario[u].fk_pokemon) {
+                                usuario_ja_tem = true;
+                                break
+                            } else {
+                                usuario_ja_tem = false;
+                            }
+                        }
+                        if (usuario_ja_tem == false) {
+            console.log('tudo normal, indo pro proximo card...')
+            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${p}`);
+            const data = await response.json();
+            console.log(data);
+            console.log('quantidade de tipos do pokemon: ', data.types.length)
+            document.getElementById("div_pokedex").innerHTML += `
+                <div class="pokedex-card">
+                    <span class="pokemon-number">#${p}</span>
+                    <span class="pokemon-name"><b>${data.forms[0].name}</b></span>
+                    <img src="${data.sprites.front_default}" class="pokemon-img" alt="">
+                    ${data.types.length == 1 ? `<img src="../assets/imgs/${data.types[0].type.name}.png" class="pokemon-type" alt="">` : `<img src="../assets/imgs/${data.types[0].type.name}.png" class="pokemon-type" alt=""><img src="../assets/imgs/${data.types[1].type.name}.png" class="pokemon-type" alt="">`}
+                    <button class="pokemon-register-button" onclick="adicionar_pokemon(${p})"><b>REGISTRAR</b></button>
+                </div>
+                `
+            }}
+                });
+
+            } else {
+
+                console.log("Houve um erro ao tentar realizar o login!");
+
+                resposta.text().then(texto => {
+                    console.error(texto);
+                    // finalizarAguardar(texto);
+                });
+            }})
+}
+
+async function pokedex_registred() {
+    var usuarioVar = sessionStorage.ID_USUARIO;
+    parar_pokedex_all = true;
+    parar_pokedex_not_registred = true;
+    document.getElementById("pokedex_bar").innerHTML = `
+            <span class="pokedex-bar-span">Filtros: </span>
+            <button onclick="pokedex_all()" class="pokedex-bar-button">All</button>
+            <button onclick="pokedex_not_registred()" class="pokedex-bar-button">Nao registrados</button>
+            <button onclick="pokedex_registred()" class="pokedex-bar-button-actual">Registrados</button>
+    `;
+    
+    
+    fetch("/pokedex/buscarPokemonPorUsuario", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                usuarioServer: usuarioVar,
+            })
+        }).then(function (resposta) {
+            console.log("ESTOU NO THEN DO entrar()!")
+
+            if (resposta.ok) {
+                console.log(resposta);
+
+                resposta.json().then(async json => {
+                    console.log(json);
+                    console.log(JSON.stringify(json));
+                    document.getElementById("div_pokedex").innerHTML = '';
+                    let pokemon_do_usuario = json.pokemon;
+                    parar_pokedex_all = false;
+                    parar_pokedex_not_registred = false;
+
+                    for(let p = 1;p<1026;p++) {
+                    if (parar_pokedex_registred) {
+                        console.log('o stop esta ou foi ativado');
+                        return;
+                    }  
+                    let usuario_ja_tem = false;
+                        for(let u = 0; u< pokemon_do_usuario.length; u++) {
+                            if (p == pokemon_do_usuario[u].fk_pokemon) {
+                                usuario_ja_tem = true;
+                                break
+                            } else {
+                                usuario_ja_tem = false;
+                            }
+                        }
+                        if (usuario_ja_tem) {
+            console.log('tudo normal, indo pro proximo card...')
+            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${p}`);
+            const data = await response.json();
+            console.log(data);
+            console.log('quantidade de tipos do pokemon: ', data.types.length)
+            document.getElementById("div_pokedex").innerHTML += `
+                <div class="pokedex-card">
+                    <span class="pokemon-number">#${p}</span>
+                    <span class="pokemon-name"><b>${data.forms[0].name}</b></span>
+                    <img src="${data.sprites.front_default}" class="pokemon-img" alt="">
+                    ${data.types.length == 1 ? `<img src="../assets/imgs/${data.types[0].type.name}.png" class="pokemon-type" alt="">` : `<img src="../assets/imgs/${data.types[0].type.name}.png" class="pokemon-type" alt=""><img src="../assets/imgs/${data.types[1].type.name}.png" class="pokemon-type" alt="">`}
+                    <button class="pokemon-registered-button"><b>REGISTRADO</b></button>
+                </div>
+                `
+            }}
+                });
+
+            } else {
+
+                console.log("Houve um erro ao tentar realizar o login!");
+
+                resposta.text().then(texto => {
+                    console.error(texto);
+                    // finalizarAguardar(texto);
+                });
+            }})
+}
+
+function adicionar_pokemon(p) {
+    parar_pokedex_all = true;
+    parar_pokedex_not_registred = true;
+    parar_pokedex_registred = true;
+    console.log("parei os cards");
+
+    var usuarioVar = sessionStorage.ID_USUARIO;
+    var pokemonVar = p;
+
+    console.log('Id do Usuario: ', usuarioVar, ' Pokemon que vai ser registrado: ', pokemonVar);
+    // Verificando se há algum campo em branco
+  
+    
+    // Enviando o valor da nova input
+    fetch("/pokedex/registrar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        // crie um atributo que recebe o valor recuperado aqui
+        // Agora vá para o arquivo routes/usuario.js
+        usuarioServer: usuarioVar,
+        pokemonServer: pokemonVar,
+        
+      }),
+    })
+      .then(function (resposta) {
+
+        console.log("resposta: ", resposta);
+        if (resposta.ok) {
+            parar_pokedex_all = false;
+
+
+          console.log("Pokemon registrado com sucesso! recarregando a pagina...") 
+
+          setTimeout(() => {
+            window.location = "cards.html";
+          }, "2000");
+
+          limparFormulario();
+          // finalizarAguardar();
+        } else {
+          throw "Houve um erro ao tentar registrar um pokemon";
+        }
+      })
+}
+</script>
+
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AquaTech | Simulador</title>
+
+    <script src="./js/sessao.js"></script>
+
+    <link rel="stylesheet" href="./css/estilo.css">
+    <link rel="icon" href="./assets/icon/favicon2.ico">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+</head>
+
+<body>
+
+    <!--header inicio-->
+    <div class="header">
+        <div class="container">
+            <h1 class="titulo">CTA Helper</h1>
+            <ul class="navbar">
+                <li>
+                    <a href="./index.html">Inicial</a>
+                </li>
+                <li class="agora">Pokedex</li>
+                <li>|</li>
+                <li>
+                    <a href="./login.html">Login</a>
+                </li>
+                <li>
+                    <a href="./login.html">Cadastro</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+
+    <!-- simulador inicio -->
+    <div class="simulador">
+        <div class="container">
+            <h2>Pokedex</h2>
+            <div id="div_pokedex">
+            </div>
+        </div>
+    </div>
+    <!-- simulador fim -->
+
+    <script>
+        async function pokedex() {
+        for(let p = 1;p<1026;p++) {
+            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${p}`);
+            const data = await response.json();
+            console.log(data);
+            console.log(data.types.length)
+            document.getElementById("div_pokedex").innerHTML += `
+                <div class="pokedex-card">
+                    <span class="pokemon-number">#${p}</span>
+                    <span class="pokemon-name"><b>${data.forms[0].name}</b></span>
+                    <img src="${data.sprites.front_default}" class="pokemon-img" alt="">
+                    ${data.types.length == 1 ? `<img src="./assets/imgs/${data.types[0].type.name}.png" class="pokemon-type" alt="">` : `<img src="./assets/imgs/${data.types[0].type.name}.png" class="pokemon-type" alt=""><img src="./assets/imgs/${data.types[1].type.name}.png" class="pokemon-type" alt="">`}
+                </div>
+                `
+            }
+        }
+        pokedex()
+    </script>
+</body>
+
+</html>
